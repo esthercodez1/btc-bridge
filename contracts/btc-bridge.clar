@@ -238,3 +238,22 @@
         )
     )
 )
+
+;; Read-Only Functions
+(define-read-only (get-validator-status (validator principal))
+    (match (map-get? validators validator)
+        validator-info (get active validator-info)
+        false
+    )
+)
+
+(define-read-only (get-bridge-balance (user principal))
+    (default-to u0 (map-get? bridge-balances user))
+)
+
+(define-read-only (validate-deposit-amount (amount uint))
+    (and 
+        (>= amount MIN-DEPOSIT-AMOUNT)
+        (<= amount MAX-DEPOSIT-AMOUNT)
+    )
+)
