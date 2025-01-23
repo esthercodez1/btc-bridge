@@ -79,3 +79,31 @@
 )
 
 (define-map bridge-balances principal uint)
+
+;; Core Public Functions
+(define-public (initialize-bridge)
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
+        (var-set bridge-paused false)
+        (ok true)
+    )
+)
+
+(define-public (pause-bridge)
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
+        (var-set bridge-paused true)
+        (ok true)
+    )
+)
+
+(define-public (add-validator (validator principal))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
+        (asserts! (is-valid-principal validator) (err ERROR-INVALID-VALIDATOR-ADDRESS))
+        (map-set validators validator { active: true, added-at: block-height })
+        (var-set total-validators (+ (var-get total-validators) u1))
+        (ok true)
+    )
+)
+
