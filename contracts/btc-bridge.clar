@@ -51,3 +51,31 @@
 (define-data-var last-processed-height uint u0)
 (define-data-var last-emergency-withdrawal-height uint u0)
 (define-data-var total-validators uint u0)
+
+;; Data Maps
+(define-map deposits 
+    { tx-hash: (buff 32) }
+    {
+        amount: uint,
+        recipient: principal,
+        processed: bool,
+        confirmations: uint,
+        timestamp: uint,
+        btc-sender: (buff 33)
+    }
+)
+
+(define-map validators 
+    principal 
+    {
+        active: bool, 
+        added-at: uint
+    }
+)
+
+(define-map validator-signatures
+    { tx-hash: (buff 32), validator: principal }
+    { signature: (buff 65), timestamp: uint }
+)
+
+(define-map bridge-balances principal uint)
