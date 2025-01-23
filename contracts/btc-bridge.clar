@@ -212,3 +212,29 @@
         (ok true)
     )
 )
+
+(define-public (emergency-withdraw (amount uint) (recipient principal))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
+        (asserts! (>= (- block-height (var-get last-emergency-withdrawal-height)) EMERGENCY-TIMELOCK) 
+            (err ERROR-TIMELOCK-NOT-EXPIRED))
+        (asserts! (>= (var-get total-bridged-amount) amount) (err ERROR-INSUFFICIENT-BALANCE))
+        
+        (let (
+            (current-balance (default-to u0 (map-get? bridge-balances recipient)))
+            (new-balance (+ current-balance amount))
+        )
+            (var-set last-emergency-withdrawal-height block-height)
+            (map-set bridge-balances recipient new-balance)
+            (var-set total-bridged-amount (- (var-get total-bridged-amount) amount))
+            
+            (print {
+                type: "emergency-withdraw",
+                recipient: recipient,
+                amount: amount
+            })
+            
+            (ok true)
+        )
+    )
+)
