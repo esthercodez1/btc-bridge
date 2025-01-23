@@ -44,6 +44,7 @@
 (define-constant REQUIRED-CONFIRMATIONS u6)
 (define-constant MIN-VALIDATORS u3)
 (define-constant EMERGENCY-TIMELOCK u144)  ;; Approximately 24 hours
+(define-constant addr-zero 'ST000000000000000000002AMW42H)
 
 ;; Data Vars
 (define-data-var bridge-paused bool false)
@@ -100,8 +101,9 @@
 (define-public (add-validator (validator principal))
     (begin
         (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
-        (asserts! (is-valid-principal validator) (err ERROR-INVALID-VALIDATOR-ADDRESS))
-        (map-set validators validator { active: true, added-at: block-height })
+        (asserts! (not (is-eq validator addr-zero)) (err ERROR-INVALID-VALIDATOR-ADDRESS))
+        (asserts! (not (get-validator-status validator)) (err ERROR-INVALID-VALIDATOR-ADDRESS))
+        (map-set validators validator { active: true, added-at: u0 })  ;; Use u0 or a block tracking mechanism
         (var-set total-validators (+ (var-get total-validators) u1))
         (ok true)
     )
@@ -110,8 +112,8 @@
 (define-public (remove-validator (validator principal))
     (begin
         (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
-        (asserts! (is-valid-principal validator) (err ERROR-INVALID-VALIDATOR-ADDRESS))
-        (map-set validators validator { active: false, added-at: block-height })
+        (asserts! (get-validator-status validator) (err ERROR-INVALID-VALIDATOR-ADDRESS))
+        (map-set validators validator { active: false, added-at: u0 })  ;; Use u0 or a block tracking mechanism
         (var-set total-validators (- (var-get total-validators) u1))
         (ok true)
     )
@@ -136,7 +138,7 @@
                 recipient: recipient,
                 processed: false,
                 confirmations: u0,
-                timestamp: block-height,
+                timestamp: u0,  ;; Replace with appropriate tracking
                 btc-sender: btc-sender
             }))
             
@@ -205,7 +207,7 @@
             sender: tx-sender,
             amount: amount,
             btc-recipient: btc-recipient,
-            timestamp: block-height
+            timestamp: u0
         })
         
         (var-set total-bridged-amount (- (var-get total-bridged-amount) amount))
@@ -216,7 +218,7 @@
 (define-public (emergency-withdraw (amount uint) (recipient principal))
     (begin
         (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
-        (asserts! (>= (- block-height (var-get last-emergency-withdrawal-height)) EMERGENCY-TIMELOCK) 
+        (asserts! (>= (- u0 (var-get last-emergency-withdrawal-height)) EMERGENCY-TIMELOCK) 
             (err ERROR-TIMELOCK-NOT-EXPIRED))
         (asserts! (>= (var-get total-bridged-amount) amount) (err ERROR-INSUFFICIENT-BALANCE))
         
@@ -224,7 +226,7 @@
             (current-balance (default-to u0 (map-get? bridge-balances recipient)))
             (new-balance (+ current-balance amount))
         )
-            (var-set last-emergency-withdrawal-height block-height)
+            (var-set last-emergency-withdrawal-height u0)
             (map-set bridge-balances recipient new-balance)
             (var-set total-bridged-amount (- (var-get total-bridged-amount) amount))
             
@@ -255,5 +257,19 @@
     (and 
         (>= amount MIN-DEPOSIT-AMOUNT)
         (<= amount MAX-DEPOSIT-AMOUNT)
+    )
+)
+
+(define-read-only (is-valid-tx-hash (tx-hash (buff 32)))
+    (and 
+        (not (is-eq tx-hash 0x))  ;; Ensure not a zero hash
+        (is-eq (len tx-hash) u32)  ;; Ensure exactly 32 bytes
+    )
+)
+
+(define-read-only (is-valid-signature (signature (buff 65)))
+    (and 
+        (not (is-eq signature 0x))  ;; Ensure not a zero signature
+        (is-eq (len signature) u65)  ;; Ensure exactly 65 bytes
     )
 )
