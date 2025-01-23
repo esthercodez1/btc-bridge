@@ -156,6 +156,9 @@
         (deposit (unwrap! (map-get? deposits {tx-hash: tx-hash}) (err ERROR-INVALID-BRIDGE-STATUS)))
         (is-validator (get-validator-status tx-sender))
     )
+        ;; Add additional validation for tx-hash
+        (asserts! (is-valid-tx-hash tx-hash) (err ERROR-INVALID-TX-HASH))
+        
         (asserts! (not (var-get bridge-paused)) (err ERROR-BRIDGE-PAUSED))
         (asserts! (is-valid-signature signature) (err ERROR-INVALID-SIGNATURE))
         (asserts! (not (get processed deposit)) (err ERROR-ALREADY-PROCESSED))
@@ -217,6 +220,9 @@
 
 (define-public (emergency-withdraw (amount uint) (recipient principal))
     (begin
+        ;; Add recipient validation
+        (asserts! (is-valid-recipient recipient) (err ERROR-INVALID-RECIPIENT-ADDRESS))
+        
         (asserts! (is-eq tx-sender CONTRACT-DEPLOYER) (err ERROR-NOT-AUTHORIZED))
         (asserts! (>= (- u0 (var-get last-emergency-withdrawal-height)) EMERGENCY-TIMELOCK) 
             (err ERROR-TIMELOCK-NOT-EXPIRED))
@@ -271,5 +277,12 @@
     (and 
         (not (is-eq signature 0x))  ;; Ensure not a zero signature
         (is-eq (len signature) u65)  ;; Ensure exactly 65 bytes
+    )
+)
+
+(define-read-only (is-valid-recipient (recipient principal))
+    (and 
+        (not (is-eq recipient addr-zero))
+        (is-some (some recipient))
     )
 )
