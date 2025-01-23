@@ -36,3 +36,18 @@
 (define-constant ERROR-INVALID-TX-HASH u1010)
 (define-constant ERROR-INSUFFICIENT-VALIDATORS u1011)
 (define-constant ERROR-TIMELOCK-NOT-EXPIRED u1012)
+
+;; Constants
+(define-constant CONTRACT-DEPLOYER tx-sender)
+(define-constant MIN-DEPOSIT-AMOUNT u100000)
+(define-constant MAX-DEPOSIT-AMOUNT u1000000000)
+(define-constant REQUIRED-CONFIRMATIONS u6)
+(define-constant MIN-VALIDATORS u3)
+(define-constant EMERGENCY-TIMELOCK u144)  ;; Approximately 24 hours
+
+;; Data Vars
+(define-data-var bridge-paused bool false)
+(define-data-var total-bridged-amount uint u0)
+(define-data-var last-processed-height uint u0)
+(define-data-var last-emergency-withdrawal-height uint u0)
+(define-data-var total-validators uint u0)
